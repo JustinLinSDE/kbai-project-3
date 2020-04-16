@@ -118,27 +118,34 @@ class Agent:
         else:
             return -1
 
-    def calculateRMS (self, rmsOne, rmsTwo, neighborDPR, neighbor, choice):
-        currentDPR = self.calculateDPR(neighbor, choice)
-        rmsChoice = np.math.sqrt((neighborDPR - currentDPR)**2 / 2.0)
-        firstTwo = rmsOne - rmsTwo
-        lastTwo =  rmsTwo - rmsChoice
-        rms = np.math.sqrt((firstTwo - lastTwo)**2 / 2.0)
-        return rms
-
-    def calculateScore (self, imageQuestion, imageChoice, tagetDPR, targetIPR):
-        currentDPR = self.calculateDPR(imageQuestion, imageChoice)
-        currentIPR = self.interPixelRatio(imageQuestion, imageChoice)
-        dprDistance = abs(currentDPR - tagetDPR)
-        iprDistance = abs(currentIPR - targetIPR)
-        score = 0.9 * dprDistance + 0.1 * iprDistance
-        return score
-
-    def calculateDPR (self, image1, image2):
+    def DPR (self, image1, image2):
         npMatrix1 = self.blackWhite(image1)
         npMatrix2 = self.blackWhite(image2)
-        ratio1 = self.blackPixelRatio(npMatrix1)
-        ratio2 = self.blackPixelRatio(npMatrix2)
+        black1 = np.count_nonzero(npMatrix1)
+        black2 = np.count_nonzero(npMatrix2)
+        return float (black1/black2)
+
+    def NMPR (self, image1, image2):
+        row = image1.size[0]
+        column = image1.size[1]
+        pixelMatrix1 = image1.load()
+        pixelMatrix2 = image2.load()
+        whiteColor = (255, 255, 255, 255)
+        nonMatchingNum = 0.0;
+        for i in range(row):
+            for j in range(column):
+                if (pixelMatrix1[i, j] == whiteColor and pixelMatrix2[i, j] != whiteColor):
+                    nonMatchingNum += 1
+                elif (pixelMatrix1[i, j] != whiteColor and pixelMatrix2[i, j] == whiteColor):
+                    nonMatchingNum += 1
+
+        return nonMatchingNum / (row * column)
+
+    def DPD (self, image1, image2):
+        npMatrix1 = self.blackWhite(image1)
+        npMatrix2 = self.blackWhite(image2)
+        ratio1 = self.blackPixelPercentage(npMatrix1)
+        ratio2 = self.blackPixelPercentage(npMatrix2)
         return ratio1 - ratio2
 
     def loadChoices(self, problem):
@@ -160,42 +167,22 @@ class Agent:
     def blackWhite(self, image):
         row = image.size[0]
         column = image.size[1]
-        blackWhiteMatrix = np.ones((image.size[0], image.size[1]), dtype=bool)
+        blackWhiteMatrix = np.ones((row, column), dtype=bool)
         # print(row)
         # print(column)
         pixelMatrix = image.load()
         whiteColor = (255,255,255,255)
-        for i in range(blackWhiteMatrix.shape[0]):
-            for j in range(blackWhiteMatrix.shape[0]):
+        for i in range(row):
+            for j in range(column):
                 if (pixelMatrix[i, j] == whiteColor):
                     blackWhiteMatrix[i, j] = False
         return blackWhiteMatrix
 
 
-    def blackPixelRatio(self, npMatrix):
+    def blackPixelPercentage(self, npMatrix):
         black = np.count_nonzero(npMatrix)
         ratio = float (black)/(npMatrix.shape[0] * npMatrix.shape[1])
         return ratio
-
-    def interPixelRatio(self, image1, image2):
-        row = image1.size[0]
-        column = image1.size[1]
-        pixelMatrix1 = image1.load()
-        pixelMatrix2 = image2.load()
-        whiteColor = (255, 255, 255, 255)
-        sameBlackNum = 0.0;
-        totalBlackNum = 0.0;
-        for i in range(row):
-            for j in range(column):
-                if (pixelMatrix1[i, j] != whiteColor or pixelMatrix2[i, j] != whiteColor):
-                    totalBlackNum += 1
-                if (pixelMatrix1[i, j] != whiteColor and pixelMatrix2[i, j] != whiteColor):
-                    sameBlackNum += 1
-        if totalBlackNum != 0:
-            return sameBlackNum/totalBlackNum
-        else:
-            return 0
-
 
 if __name__ == "__main__":
     problems =  ProblemSet('Basic Problems C')
